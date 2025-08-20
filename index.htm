@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sistema de Bingo- Enfermagem</title>
+<style>
+  :root{
+    --bg:#0f1724; --card:#0b1220; --accent:#06b6d4; --muted:#94a3b8; --win:#10b981;
+    --glass: rgba(255,255,255,0.03);
+  }
+  *{box-sizing:border-box;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif}
+  body{margin:0;background:linear-gradient(180deg,#071023 0%, var(--bg) 100%);color:#e6eef6;padding:28px}
+  h1{margin:0 0 14px;font-size:22px}
+  .app{max-width:1200px;margin:0 auto}
+  .top{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+  .controls{display:flex;gap:8px;align-items:center}
+  input[type=number]{width:76px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:var(--glass);color:inherit}
+  button{background:var(--accent);border:none;color:#042027;padding:8px 12px;border-radius:10px;cursor:pointer}
+  button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06)}
+  button.danger{background:#ef4444}
+  .layout{display:grid;grid-template-columns: 1fr 360px; gap:18px}
+  .cards-wrap{display:grid;gap:12px;align-content:start}
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(220px,1fr)); gap:12px}
+  .bingo-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), var(--card)); padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+  .card-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:14px;color:var(--muted)}
+  table{border-collapse:collapse;width:100%;table-layout:fixed}
+  th, td{width:20%;text-align:center;padding:10px;border-radius:8px}
+  th{font-size:14px;font-weight:700;background:rgba(255,255,255,0.02);color:var(--accent)}
+  td{background:transparent;border:1px dashed rgba(255,255,255,0.03);cursor:pointer;transition:all .12s}
+  td.marked{background:linear-gradient(90deg, rgba(6,182,212,0.12), rgba(16,185,129,0.08)); color:var(--win); font-weight:700; transform:scale(1.03)}
+  td.free{background:rgba(255,255,255,0.03); font-weight:700}
+  td.win{box-shadow:0 6px 18px rgba(16,185,129,0.08); border:2px solid rgba(16,185,129,0.12)}
+  .called-board{display:grid;grid-template-columns:repeat(15,1fr);gap:6px;margin-top:8px}
+  .called-num{padding:8px;border-radius:6px;text-align:center;background:rgba(255,255,255,0.02);font-size:12px}
+  .called-num.called{background:linear-gradient(180deg,var(--accent),#0891b2);color:#012; font-weight:800}
+  .sidebar{background:linear-gradient(180deg, rgba(255,255,255,0.02), var(--card)); padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+  .history{max-height:240px;overflow:auto;margin-top:8px;padding-right:6px}
+  .last{font-size:18px;margin-top:6px;color:var(--accent);font-weight:700}
+  .winners{margin-top:10px}
+  .winner-item{background:rgba(16,185,129,0.06);padding:8px;border-radius:8px;margin-bottom:6px;color:var(--win)}
+  .footer{margin-top:18px;color:var(--muted);font-size:13px}
+  .small{font-size:13px;color:var(--muted)}
+  .controls .toggle{display:inline-flex;align-items:center;gap:6px}
+  .btn-block{display:flex;gap:8px;flex-wrap:wrap}
+  @media(max-width:880px){.layout{grid-template-columns:1fr;}.card-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}}
+</style>
+</head>
+<body>
+  <div class="app">
+    <h1>Sistema de Bingo — Enfermagem</h1>
+    <div class="top">
+      <div class="controls">
+        <label class="small">Quantidade de cartelas</label>
+        <input id="numCards" type="number" min="1" max="50" value="6">
+        <label class="small">Formato</label>
+        <select id="pattern">
+          <option value="bingo">Bingo 5x5 (B-I-N-G-O)</option>
+        </select>
+        <button id="generate">Gerar cartelas</button>
+        <button id="resetAll" class="secondary">Resetar tudo</button>
+      </div>
+
+      <div style="margin-left:auto" class="controls">
+        <div class="small">Auto Draw</div>
+        <input id="autoInterval" type="number" min="1" max="10" value="3" title="Intervalo em segundos" />
+        <button id="toggleAuto" class="secondary">Start</button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div>
+        <div class="card-title small">Cartelas</div>
+        <div class="cards-wrap">
+          <div class="card-grid" id="cardsContainer"></div>
+        </div>
+
+        <div style="margin-top:14px" class="card-title small">Botões de sorteio</div>
+        <div class="btn-block" style="margin-bottom:10px">
+          <button id="drawNext">Sortear próximo</button>
+          <button id="drawMultiple" class="secondary">Sortear 5</button>
+          <button id="shuffleNumbers" class="secondary">Embaralhar números</button>
+          <button id="clearCalled" class="danger">Limpar chamados</button>
+        </div>
+
+        <div class="footer">
+          Dica: clique nos números da cartela para marcar manualmente. O sistema também marca automaticamente ao sortear.
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <div class="small">Último número chamado</div>
+        <div class="last" id="lastCalled">--</div>
+
+        <div style="margin-top:10px" class="small">Números chamados (1–75)</div>
+        <div id="calledBoard" class="called-board"></div>
+
+        <div style="margin-top:12px" class="small">Histórico</div>
+        <div id="history" class="history"></div>
+
+        <div style="margin-top:12px" class="small">Vencedores</div>
+        <div id="winners" class="winners"></div>
+      </aside>
+    </div>
+  </div>
+
+<script>
+/*
+  Sistema de Bingo em JS
+  - Cartelas 5x5 padrão B(1-15), I(16-30), N(31-45), G(46-60), O(61-75)
+  - Free no centro
+  - Sorteio sem reposição, histórico, checagem automática de vencedores: linha, coluna, diagonal e cartela cheia (full)
+*/
+
+const MAX_NUM = 75;
+const colsRanges = [
+  [1,15], [16,30], [31,45], [46,60], [61,75]
+];
+
+let state = {
+  cards: [],            // lista de cartelas {id, matrix:[[num,obj]], marks:Set}
+  called: new Set(),    // números chamados
+  pool: [],             // números restantes para sortear
+  history: [],          // histórico de chamados
+  autoIntervalId: null,
+  nextCardId: 1
+};
+
+const $cardsContainer = document.getElementById('cardsContainer');
+const $calledBoard = document.getElementById('calledBoard');
+const $history = document.getElementById('history');
+const $lastCalled = document.getElementById('lastCalled');
+const $winners = document.getElementById('winners');
+
+function buildPool() {
+  state.pool = [];
+  for(let i=1;i<=MAX_NUM;i++) state.pool.push(i);
+  shuffleArray(state.pool);
+}
+
+function shuffleArray(a){
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+}
+
+function generateCard(){
+  // cria matriz 5x5 com base nas colunas e ranges
+  const matrix = Array.from({length:5},()=>Array(5).fill(null));
+  for(let c=0;c<5;c++){
+    const [min,max]=colsRanges[c];
+    const pool=[];
+    for(let n=min;n<=max;n++) pool.push(n);
+    shuffleArray(pool);
+    for(let r=0;r<5;r++){
+      matrix[r][c] = { num: pool[r], marked:false };
+    }
+  }
+  // centro (2,2) é free
+  matrix[2][2] = { num: 'FREE', marked:true, isFree:true };
+  return matrix;
+}
+
+function createCards(count){
+  state.cards=[];
+  state.nextCardId=1;
+  for(let i=0;i<count;i++){
+    state.cards.push({
+      id: state.nextCardId++,
+      matrix: generateCard(),
+      winner:false
+    });
+  }
+  renderCards();
+}
+
+function renderCards(){
+  $cardsContainer.innerHTML='';
+  state.cards.forEach(card=>{
+    const el = document.createElement('div');
+    el.className='bingo-card';
+    el.dataset.id=card.id;
+    el.innerHTML = `
+      <div class="card-title">Cartela #${card.id} <span class="small">${card.winner ? '🏆 Vencedor' : ''}</span></div>
+      <table>
+        <thead><tr><th>B</th><th>I</th><th>N</th><th>G</th><th>O</th></tr></thead>
+        <tbody>
+        ${card.matrix.map((row, rIdx) => `<tr>${row.map((cell, cIdx) => {
+          const cls = cell.marked ? 'marked' : (cell.isFree?'free':'');
+          const text = cell.num;
+          return `<td data-card="${card.id}" data-r="${rIdx}" data-c="${cIdx}" class="${cls}">${text}</td>`;
+        }).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+    $cardsContainer.appendChild(el);
+  });
+}
+
+function renderCalledBoard(){
+  $calledBoard.innerHTML='';
+  for(let i=1;i<=MAX_NUM;i++){
+    const el = document.createElement('div');
+    el.className='called-num' + (state.called.has(i) ? ' called' : '');
+    el.textContent=i;
+    $calledBoard.appendChild(el);
+  }
+}
+
+function renderHistory(){
+  $history.innerHTML = state.history.slice().reverse().map((n, idx)=>`<div class="small">${n}</div>`).join('');
+}
+
+function markNumberOnCards(number){
+  state.cards.forEach(card=>{
+    for(let r=0;r<5;r++){
+      for(let c=0;c<5;c++){
+        const cell = card.matrix[r][c];
+        if(!cell.isFree && cell.num === number){
+          cell.marked = true;
+        }
+      }
+    }
+  });
+}
+
+function drawOne(){
+  if(state.pool.length === 0) return null;
+  const num = state.pool.shift();
+  state.called.add(num);
+  state.history.push(num);
+  $lastCalled.textContent = num;
+  renderCalledBoard();
+  renderHistory();
+  markNumberOnCards(num);
+  renderCards();
+  checkWinners();
+  return num;
+}
+
+function drawMultiple(count){
+  let drawn=[];
+  for(let i=0;i<count;i++){
+    const n = drawOne();
+    if(n===null) break;
+    drawn.push(n);
+  }
+  return drawn;
+}
+
+function clearCalled(){
+  state.called.clear();
+  buildPool();
+  state.history = [];
+  $lastCalled.textContent='--';
+  renderCalledBoard();
+  renderHistory();
+  // unmark all except FREE
+  state.cards.forEach(card=>{
+    card.winner=false;
+    for(let r=0;r<5;r++){
+      for(let c=0;c<5;c++){
+        const cell = card.matrix[r][c];
+        if(!cell.isFree) cell.marked=false;
+      }
+    }
+  });
+  renderCards();
+  renderWinners();
+}
+
+function checkWinners(){
+  const winners = [];
+  state.cards.forEach(card=>{
+    if(card.winner) return;
+    const mat = card.matrix;
+    // check rows
+    let rowWin=false;
+    for(let r=0;r<5;r++){
+      let ok=true;
+      for(let c=0;c<5;c++){
+        if(!mat[r][c].marked) { ok=false; break; }
+      }
+      if(ok) rowWin=true;
+    }
+    // columns
+    let colWin=false;
+    for(let c=0;c<5;c++){
+      let ok=true;
+      for(let r=0;r<5;r++){
+        if(!mat[r][c].marked) { ok=false; break; }
+      }
+      if(ok) colWin=true;
+    }
+    // diagonals
+    let diagWin=false;
+    let ok1=true, ok2=true;
+    for(let i=0;i<5;i++){
+      if(!mat[i][i].marked) ok1=false;
+      if(!mat[i][4-i].marked) ok2=false;
+    }
+    if(ok1 || ok2) diagWin=true;
+    // full house
+    let full=true;
+    for(let r=0;r<5;r++) for(let c=0;c<5;c++) if(!mat[r][c].marked) full=false;
+
+    if(rowWin || colWin || diagWin || full){
+      card.winner = true;
+      winners.push({id:card.id, rowWin, colWin, diagWin, full});
+      // visually mark winning cells (optional: mark full)
+      if(full){
+        for(let r=0;r<5;r++) for(let c=0;c<5;c++) mat[r][c].win=true;
+      } else {
+        // mark winning row/col/diag cells as win for highlight
+        if(rowWin){
+          for(let r=0;r<5;r++){
+            for(let c=0;c<5;c++){
+              if(mat[r][c].marked && mat[r][c]) mat[r][c].win = true;
+            }
+          }
+        }
+        if(colWin){
+          for(let c=0;c<5;c++){
+            let all=true; for(let r=0;r<5;r++) if(!mat[r][c].marked) all=false;
+            if(all) for(let r=0;r<5;r++) mat[r][c].win = true;
+          }
+        }
+        if(diagWin){
+          for(let i=0;i<5;i++){ mat[i][i].win = mat[i][i].marked || mat[i][i].isFree; mat[i][4-i].win = mat[i][4-i].marked || mat[i][4-i].isFree; }
+        }
+      }
+    }
+  });
+
+  if(winners.length) renderWinners();
+  renderCards();
+}
+
+function renderWinners(){
+  $winners.innerHTML = '';
+  state.cards.filter(c=>c.winner).forEach(card=>{
+    const div = document.createElement('div');
+    div.className='winner-item';
+    div.textContent = `Cartela #${card.id} — VENCEU!`;
+    $winners.appendChild(div);
+  });
+}
+
+function initCalledBoardUI(){
+  // create 1..75 grid placeholders
+  renderCalledBoard();
+}
+
+// events
+document.getElementById('generate').addEventListener('click', ()=>{
+  const n = parseInt(document.getElementById('numCards').value) || 1;
+  createCards(Math.max(1, Math.min(50, n)));
+  buildPool();
+  state.called.clear();
+  state.history=[];
+  renderCalledBoard();
+  renderHistory();
+  renderWinners();
+});
+
+document.getElementById('drawNext').addEventListener('click', ()=>{
+  const n = drawOne();
+  if(n===null) alert('Nenhum número restante para sortear.');
+});
+
+document.getElementById('drawMultiple').addEventListener('click', ()=>{
+  drawMultiple(5);
+});
+
+document.getElementById('shuffleNumbers').addEventListener('click', ()=>{
+  buildPool();
+  alert('Números embaralhados — pool reiniciado (chamados permanecem).');
+});
+
+document.getElementById('clearCalled').addEventListener('click', ()=>{
+  if(confirm('Limpar chamados e reiniciar cartelas?')) clearCalled();
+});
+
+document.getElementById('toggleAuto').addEventListener('click', (e)=>{
+  const btn = e.currentTarget;
+  if(state.autoIntervalId){
+    clearInterval(state.autoIntervalId);
+    state.autoIntervalId = null;
+    btn.textContent='Start';
+    btn.classList.remove('danger');
+  } else {
+    const sec = Math.max(1, parseInt(document.getElementById('autoInterval').value) || 3);
+    state.autoIntervalId = setInterval(()=>{
+      const n = drawOne();
+      if(n===null) {
+        clearInterval(state.autoIntervalId);
+        state.autoIntervalId=null;
+        btn.textContent='Start';
+      }
+    }, sec*1000);
+    btn.textContent='Stop';
+    btn.classList.add('danger');
+  }
+});
+
+document.getElementById('resetAll').addEventListener('click', ()=>{
+  if(confirm('Resetar tudo (cartelas, chamados, histórico)?')){
+    state.cards=[]; state.called.clear(); state.history=[]; state.pool=[];
+    $cardsContainer.innerHTML=''; renderCalledBoard(); renderHistory(); $lastCalled.textContent='--'; $winners.innerHTML='';
+  }
+});
+
+// delegate clicks on card cells for manual marking
+$cardsContainer.addEventListener('click', (ev)=>{
+  const td = ev.target.closest('td');
+  if(!td) return;
+  const cardId = Number(td.dataset.card), r = Number(td.dataset.r), c = Number(td.dataset.c);
+  const card = state.cards.find(x=>x.id===cardId);
+  if(!card) return;
+  const cell = card.matrix[r][c];
+  if(cell.isFree) return;
+  cell.marked = !cell.marked;
+  renderCards();
+  checkWinners();
+});
+
+// init
+(function startup(){
+  buildPool();
+  initCalledBoardUI();
+  // generate default cards
+  createCards(Number(document.getElementById('numCards').value||6));
+})();
+</script>
+</body>
+</html>
