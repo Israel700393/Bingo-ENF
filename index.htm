@@ -9,15 +9,15 @@
     --bg:#0f1724; --card:#0b1220; --accent:#06b6d4; --muted:#94a3b8; --win:#10b981;
     --glass: rgba(255,255,255,0.03);
   }
-  *{box-sizing:border-box;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif}
+   *{box-sizing:border-box;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif}
   body{margin:0;background:linear-gradient(180deg,#071023 0%, var(--bg) 100%);color:#e6eef6;padding:28px}
   h1{margin:0 0 14px;font-size:22px}
   .app{max-width:1200px;margin:0 auto}
   .top{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
   .controls{display:flex;gap:8px;align-items:center}
   input[type=number]{width:76px;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:var(--glass);color:inherit}
-  button{background:var(--accent);border:none;color:#042027;padding:8px 12px;border-radius:10px;cursor:pointer}
-  button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06)}
+  button{background:var(--accent);border:none;color:#a5c4cc;padding:8px 12px;border-radius:10px;cursor:pointer}
+  button.secondary{background:transparent;border:1px solid rgba(255, 255, 255, 0.06)}
   button.danger{background:#ef4444}
   .layout{display:grid;grid-template-columns: 1fr 360px; gap:18px}
   .cards-wrap{display:grid;gap:12px;align-content:start}
@@ -28,17 +28,17 @@
   th, td{width:20%;text-align:center;padding:10px;border-radius:8px}
   th{font-size:14px;font-weight:700;background:rgba(255,255,255,0.02);color:var(--accent)}
   td{background:transparent;border:1px dashed rgba(255,255,255,0.03);cursor:pointer;transition:all .12s}
-  td.marked{background:linear-gradient(90deg, rgba(6,182,212,0.12), rgba(16,185,129,0.08)); color:var(--win); font-weight:700; transform:scale(1.03)}
+  td.marked{background:linear-gradient(90deg, rgba(255, 255, 255, 0.12), rgba(232, 240, 237, 0.08)); color:var(--win); font-weight:700; transform:scale(1.03)}
   td.free{background:rgba(255,255,255,0.03); font-weight:700}
-  td.win{box-shadow:0 6px 18px rgba(16,185,129,0.08); border:2px solid rgba(16,185,129,0.12)}
+  td.win{box-shadow:0 6px 18px rgba(211, 228, 221, 0.08); border:2px solid rgba(217, 243, 234, 0.12)}
   .called-board{display:grid;grid-template-columns:repeat(15,1fr);gap:6px;margin-top:8px}
   .called-num{padding:8px;border-radius:6px;text-align:center;background:rgba(255,255,255,0.02);font-size:12px}
-  .called-num.called{background:linear-gradient(180deg,var(--accent),#0891b2);color:#012; font-weight:800}
+  .called-num.called{background:linear-gradient(180deg,var(--accent),#8a9da1);color:#012; font-weight:800}
   .sidebar{background:linear-gradient(180deg, rgba(255,255,255,0.02), var(--card)); padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
   .history{max-height:240px;overflow:auto;margin-top:8px;padding-right:6px}
   .last{font-size:18px;margin-top:6px;color:var(--accent);font-weight:700}
   .winners{margin-top:10px}
-  .winner-item{background:rgba(16,185,129,0.06);padding:8px;border-radius:8px;margin-bottom:6px;color:var(--win)}
+  .winner-item{background:rgba(255, 255, 255, 0.06);padding:8px;border-radius:8px;margin-bottom:6px;color:var(--win)}
   .footer{margin-top:18px;color:var(--muted);font-size:13px}
   .small{font-size:13px;color:var(--muted)}
   .controls .toggle{display:inline-flex;align-items:center;gap:6px}
@@ -434,4 +434,5 @@ $cardsContainer.addEventListener('click', (ev)=>{
 })();
 </script>
 </body>
+
 </html>
